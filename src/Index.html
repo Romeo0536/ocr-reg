@@ -102,6 +102,31 @@
       <button id="saveSettings" class="btn primary">💾 บันทึกการตั้งค่า</button>
       <span id="saveResult" class="test-result"></span>
     </div>
+
+    <div class="card">
+      <h2>🔌 การเชื่อมต่อหน้าเว็บภายนอก (API)</h2>
+      <p class="hint">ใช้เชื่อมต่อ frontend แยก (ไฟล์ <code>web/index.html</code>) เข้ากับระบบนี้</p>
+
+      <label>Web App URL (deployment ที่กำลังเปิด)</label>
+      <div class="copy-row"><input id="api_url" readonly><button class="btn ghost mini" data-copy="api_url">คัดลอก</button></div>
+      <p class="hint">⚠ สำหรับ frontend ภายนอก ให้ใช้ URL ของ deployment ที่ตั้ง <b>Who has access: Anyone</b> (อาจไม่ใช่ URL นี้)</p>
+
+      <label>API Token <span class="badge" id="tokenState"></span></label>
+      <div class="copy-row"><input id="api_token" readonly type="text" placeholder="ยังไม่ได้สร้าง"><button class="btn ghost mini" data-copy="api_token">คัดลอก</button></div>
+      <button id="genToken" class="btn ghost">🔑 สร้าง / สร้างใหม่ Token</button>
+
+      <label>จำกัดอีเมล Gmail ที่ใช้ได้ (ไม่บังคับ, คั่นด้วย ,)</label>
+      <input id="api_allowed" placeholder="เว้นว่าง = ใช้ token อย่างเดียว | เช่น a@gmail.com,b@gmail.com">
+      <p class="hint">ถ้ากรอก จะบังคับให้ frontend ต้อง Login ด้วย Gmail ที่อยู่ในรายการก่อนบันทึก/ประมวลผล</p>
+
+      <label>Google OAuth Client ID (ไม่บังคับ — สำหรับ "Login ด้วย Gmail" บน frontend)</label>
+      <input id="api_clientid" placeholder="xxxxx.apps.googleusercontent.com">
+
+      <div class="row">
+        <button id="saveApi" class="btn primary">💾 บันทึกการเชื่อมต่อ</button>
+        <span id="apiSaveResult" class="test-result"></span>
+      </div>
+    </div>
   </section>
 
   <!-- ================= อัตโนมัติ ================= -->

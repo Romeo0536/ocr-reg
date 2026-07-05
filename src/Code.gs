@@ -8,8 +8,11 @@
  *   - แยกรายการสินค้าหลายรายการต่อเอกสารได้
  * ------------------------------------------------------------------------- */
 
-/** ให้บริการหน้าเว็บ (Web App) */
-function doGet() {
+/** ให้บริการหน้าเว็บ (Web App) หรือ JSON API เมื่อมี ?action= */
+function doGet(e) {
+  if (e && e.parameter && e.parameter.action) {
+    return apiGet_(e);   // JSON API (ping/bootstrap ฯลฯ) — ดู Api.gs
+  }
   return HtmlService.createTemplateFromFile('Index')
     .evaluate()
     .setTitle('ระบบอ่านบิล & ภาษี (OCR → Google Sheet)')
@@ -156,10 +159,12 @@ function setup() {
 
 /** ส่งข้อมูลตั้งต้นให้หน้าเว็บ (config + สถานะ + url ชีต) */
 function getBootstrap() {
+  var cfg = getConfig();
   return {
     config: getConfigSafe(),
     auto: getAutoStatus(),
     spreadsheetUrl: getSpreadsheetUrl(),
+    googleClientId: cfg.GOOGLE_CLIENT_ID || '',
     models: ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-3.1-flash']
   };
 }

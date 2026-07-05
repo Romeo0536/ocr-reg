@@ -221,6 +221,41 @@ $('saveAuto').addEventListener('click',function(){
   }).withFailureHandler(onFail).saveConfig(patch);
 });
 
+/* ===================== connection / API (owner UI) ===================== */
+google.script.run.withSuccessHandler(renderApiInfo).withFailureHandler(function(){}).getApiInfo();
+function renderApiInfo(info){
+  if(!info) return;
+  $('api_url').value = info.webAppUrl || '';
+  $('api_token').value = info.apiToken || '';
+  $('api_allowed').value = info.allowedEmails || '';
+  $('api_clientid').value = info.googleClientId || '';
+  var ts=$('tokenState');
+  if(info.apiToken){ ts.textContent='พร้อมใช้'; ts.className='badge set'; }
+  else { ts.textContent='ยังไม่ได้สร้าง'; ts.className='badge unset'; }
+}
+$('genToken').addEventListener('click',function(){
+  if($('api_token').value && !confirm('สร้าง Token ใหม่จะทำให้ Token เดิมใช้ไม่ได้ ต้องอัปเดตที่หน้าเว็บภายนอกด้วย — ยืนยัน?')) return;
+  loading(true,'กำลังสร้าง Token…');
+  google.script.run.withSuccessHandler(function(r){
+    loading(false); $('api_token').value=r.apiToken;
+    var ts=$('tokenState'); ts.textContent='พร้อมใช้'; ts.className='badge set';
+    toast('สร้าง API Token ใหม่แล้ว');
+  }).withFailureHandler(onFail).generateApiToken();
+});
+$('saveApi').addEventListener('click',function(){
+  var patch={ ALLOWED_EMAILS:$('api_allowed').value.trim(), GOOGLE_CLIENT_ID:$('api_clientid').value.trim() };
+  loading(true,'กำลังบันทึก…');
+  google.script.run.withSuccessHandler(function(){
+    loading(false); var r=$('apiSaveResult'); r.textContent='✔ บันทึกแล้ว'; r.className='test-result ok'; toast('บันทึกการเชื่อมต่อแล้ว');
+  }).withFailureHandler(onFail).saveApiSettings(patch);
+});
+document.querySelectorAll('[data-copy]').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var el=$(btn.dataset.copy); el.select(); el.setSelectionRange(0,99999);
+    try{ document.execCommand('copy'); toast('คัดลอกแล้ว'); }catch(e){}
+  });
+});
+
 function renderAutoStatus(st){
   if(!st) return;
   var modeText={manual:'อัปโหลดเอง',drive:'Google Drive',gmail:'Gmail'}[st.sourceMode]||st.sourceMode;

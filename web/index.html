@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ระบบอ่านบิล & ภาษี — หน้าเว็บภายนอก</title>
+<style>
+  :root{--bg:#f4f6fb;--card:#fff;--ink:#1f2937;--muted:#6b7280;--primary:#0b5394;--primary-2:#1565c0;
+    --line:#e5e7eb;--ok:#137333;--warn:#b06000;--err:#b71c1c;--ok-bg:#e6f4ea;--warn-bg:#fff4e0;--err-bg:#fdecea;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Sarabun","Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+  h1{font-size:19px;margin:0}h2{font-size:16px;margin:0 0 10px}p{margin:4px 0}
+  .sub{font-size:12px;color:#dbe7f5}.hint{font-size:12px;color:var(--muted)}
+  code{background:#eef2f9;padding:1px 5px;border-radius:4px;font-size:12px}
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;background:linear-gradient(120deg,var(--primary),var(--primary-2));color:#fff;padding:14px 20px}
+  .brand{display:flex;align-items:center;gap:12px}.logo{font-size:30px}
+  .user{display:flex;align-items:center;gap:10px;text-align:right;flex-wrap:wrap;justify-content:flex-end}
+  .email{font-size:13px;background:rgba(255,255,255,.15);padding:5px 10px;border-radius:20px}
+  .wrap{max-width:920px;margin:0 auto;padding:16px 20px 60px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  label{display:block;font-size:13px;font-weight:600;margin:12px 0 5px}
+  input,select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:14px;font-family:inherit;background:#fff}
+  input:focus,select:focus{outline:2px solid var(--primary-2);border-color:transparent}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .btn{border:none;background:#e6ebf5;color:var(--ink);padding:10px 18px;border-radius:10px;cursor:pointer;font-size:14px;font-family:inherit}
+  .btn:hover{filter:brightness(.97)}.btn.primary{background:var(--primary);color:#fff}
+  .btn.ghost{background:#fff;border:1px solid var(--line)}.btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.mini{padding:7px 12px;font-size:12px}
+  .linklike{border:none;background:none;color:var(--primary-2);cursor:pointer;font-size:inherit;text-decoration:underline;padding:0}
+  .tabs{display:flex;gap:6px;margin-bottom:12px}
+  .tab{border:none;background:#e6ebf5;padding:9px 16px;border-radius:10px;cursor:pointer;font-size:14px}
+  .tab.active{background:var(--primary);color:#fff;font-weight:600}
+  .panel{display:none}.panel.active{display:block}
+  .dropzone{border:2px dashed #b9c6dd;border-radius:14px;padding:26px;text-align:center;background:#fbfdff;cursor:pointer;transition:.15s}
+  .dropzone.drag{background:#eef4ff;border-color:var(--primary-2)}.dz-icon{font-size:34px}
+  .segmented{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .segmented button{border:none;background:#fff;padding:9px 16px;cursor:pointer;font-size:14px;font-family:inherit}
+  .segmented button.active{background:var(--primary);color:#fff}
+  .switch-row{display:flex;align-items:center;gap:8px;font-weight:600}.switch-row input{width:auto}
+  .badge{font-size:11px;padding:2px 8px;border-radius:20px;background:#eee;color:#555}
+  .badge.set{background:var(--ok-bg);color:var(--ok)}.badge.unset{background:var(--err-bg);color:var(--err)}
+  .test-result{font-size:13px}.test-result.ok{color:var(--ok)}.test-result.err{color:var(--err)}
+  .summary{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .chip{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:90px;text-align:center}
+  .chip b{display:block;font-size:20px}.chip.ok b{color:var(--ok)}.chip.warn b{color:var(--warn)}.chip.err b{color:var(--err)}
+  .doc{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden}
+  .doc-head{display:flex;justify-content:space-between;gap:10px;padding:12px 16px;cursor:pointer}
+  .doc-head.ok{border-left:5px solid var(--ok)}.doc-head.warn{border-left:5px solid var(--warn);background:var(--warn-bg)}
+  .doc-head.error{border-left:5px solid var(--err);background:var(--err-bg)}
+  .doc-title{font-weight:600}.doc-meta{font-size:12px;color:var(--muted)}
+  .pill{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600}
+  .pill.ok{background:var(--ok-bg);color:var(--ok)}.pill.warn{background:var(--warn-bg);color:var(--warn)}
+  .pill.error{background:var(--err-bg);color:var(--err)}.pill.dup{background:#eef;color:#446}
+  .doc-body{padding:0 16px 14px;display:none}.doc-body.open{display:block}
+  .kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:6px 16px;font-size:13px;margin:8px 0}
+  .kv div span{color:var(--muted)}
+  table.items{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+  table.items th,table.items td{border:1px solid var(--line);padding:6px 8px;text-align:right}
+  table.items th:nth-child(2),table.items td:nth-child(2){text-align:left}table.items th{background:#f0f4fb}
+  .msgs{font-size:12px;margin-top:8px;color:#555;line-height:1.6}
+  .status-box{background:#f7f9fc;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:13px;margin:12px 0;line-height:1.7}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:#222;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;opacity:0;transition:.25s;z-index:50}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+  .loading{position:fixed;inset:0;background:rgba(255,255,255,.7);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:60}
+  .spinner{width:44px;height:44px;border:5px solid #d5deee;border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .src-block{border-left:3px solid var(--line);padding-left:12px;margin-top:8px}
+  @media(max-width:560px){.topbar{flex-direction:column;align-items:flex-start}.kv{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="logo">🧾</span>
+    <div><h1>ระบบอ่านบิล &amp; ภาษี</h1><p class="sub">หน้าเว็บภายนอก (เชื่อมต่อ Apps Script ผ่าน API)</p></div>
+  </div>
+  <div class="user">
+    <span id="userEmail" class="email" style="display:none"></span>
+    <span id="gsiBtn"></span>
+    <a id="openSheet" class="btn ghost mini" target="_blank" style="display:none">📗 เปิดชีต</a>
+    <button id="disconnect" class="btn ghost mini" style="display:none">ออกจากการเชื่อมต่อ</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- ======= หน้าเชื่อมต่อ ======= -->
+  <section id="connectView">
+    <div class="card">
+      <h2>🔌 เชื่อมต่อกับระบบ (Apps Script)</h2>
+      <p class="hint">นำค่าจากหน้า “ตั้งค่า → การเชื่อมต่อ (API)” ในแอป Apps Script มากรอก</p>
+      <label>Web App URL</label>
+      <input id="in_url" placeholder="https://script.google.com/macros/s/XXXX/exec">
+      <label>API Token</label>
+      <input id="in_token" type="password" placeholder="วาง API Token">
+      <div class="row">
+        <button id="connectBtn" class="btn primary">เชื่อมต่อ</button>
+        <span id="connMsg" class="test-result"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= แอปหลัก (แสดงหลังเชื่อมต่อ) ======= -->
+  <section id="appView" style="display:none">
+    <div id="gsiNotice" class="status-box" style="display:none"></div>
+    <div class="tabs">
+      <button class="tab active" data-tab="process">📥 ประมวลผล</button>
+      <button class="tab" data-tab="settings">⚙️ ตั้งค่า</button>
+      <button class="tab" data-tab="auto">🤖 อัตโนมัติ</button>
+    </div>
+
+    <!-- ประมวลผล -->
+    <div id="tab-process" class="panel active">
+      <div class="card">
+        <h2>อัปโหลดเอกสาร</h2>
+        <p class="hint">รองรับรูป (JPG/PNG/WEBP) และ PDF — เลือกหลายไฟล์ได้</p>
+        <div id="drop" class="dropzone">
+          <input type="file" id="fileInput" multiple accept="image/*,application/pdf" hidden>
+          <div class="dz-icon">⬆️</div>
+          <p>ลากไฟล์มาวาง หรือ <button class="linklike" id="browseBtn">เลือกไฟล์</button></p>
+          <p id="fileCount" class="hint"></p>
+        </div>
+        <div class="row">
+          <button id="runUpload" class="btn primary" disabled>อ่านและบันทึก</button>
+          <button id="runSources" class="btn">ดึงจากแหล่งอัตโนมัติเดี๋ยวนี้</button>
+        </div>
+      </div>
+      <div id="summary" class="summary" style="display:none"></div>
+      <div id="results"></div>
+    </div>
+
+    <!-- ตั้งค่า -->
+    <div id="tab-settings" class="panel">
+      <div class="card">
+        <h2>Gemini</h2>
+        <label>API Key <span id="keyState" class="badge"></span></label>
+        <input id="cfg_GEMINI_API_KEY" type="password" placeholder="เว้นว่าง = คงค่าเดิม">
+        <label>รุ่นโมเดล</label>
+        <input list="modelList" id="cfg_GEMINI_MODEL" placeholder="gemini-2.0-flash">
+        <datalist id="modelList"></datalist>
+      </div>
+      <div class="card">
+        <h2>แหล่งข้อมูล (ดึงจากไหน)</h2>
+        <div class="segmented" id="sourceModeSeg">
+          <button data-val="manual">อัปโหลดเอง</button><button data-val="drive">Google Drive</button><button data-val="gmail">Gmail</button>
+        </div>
+        <input type="hidden" id="cfg_SOURCE_MODE">
+        <div class="src-block" data-mode="drive" style="display:none">
+          <label>โฟลเดอร์ต้นทาง (Folder ID)</label><input id="cfg_DRIVE_SOURCE_FOLDER_ID">
+          <label>โฟลเดอร์เก็บไฟล์ที่ทำเสร็จ (ไม่บังคับ)</label><input id="cfg_DRIVE_DONE_FOLDER_ID">
+        </div>
+        <div class="src-block" data-mode="gmail" style="display:none">
+          <label>เงื่อนไขค้นหาอีเมล</label><input id="cfg_GMAIL_QUERY">
+          <label>ป้ายกำกับเมื่อประมวลผลแล้ว</label><input id="cfg_GMAIL_PROCESSED_LABEL">
+        </div>
+        <div class="row"><button id="testSource" class="btn ghost">🔌 ทดสอบการเชื่อมต่อ</button><span id="testResult" class="test-result"></span></div>
+      </div>
+      <div class="card">
+        <h2>ปลายทาง (เก็บที่ไหน)</h2>
+        <label>Google Sheet ID</label><input id="cfg_SPREADSHEET_ID" placeholder="เว้นว่าง = สร้างใหม่ให้">
+        <label class="switch-row"><input type="checkbox" id="cfg_DEDUPE"> ข้ามเอกสารซ้ำ</label>
+      </div>
+      <div class="row"><button id="saveSettings" class="btn primary">💾 บันทึกการตั้งค่า</button><span id="saveResult" class="test-result"></span></div>
+    </div>
+
+    <!-- อัตโนมัติ -->
+    <div id="tab-auto" class="panel">
+      <div class="card">
+        <h2>ทำงานอัตโนมัติ</h2>
+        <p class="hint">เมื่อเปิด ระบบจะดึงเอกสารจาก Drive/Gmail มาอ่านและบันทึกเองตามรอบเวลา</p>
+        <label class="switch-row"><input type="checkbox" id="cfg_AUTO_ENABLED"> เปิดการทำงานอัตโนมัติ</label>
+        <label>ทำงานทุกๆ (นาที)</label>
+        <select id="cfg_AUTO_INTERVAL_MIN">
+          <option value="1">1</option><option value="5">5</option><option value="10">10</option>
+          <option value="15">15</option><option value="30" selected>30</option><option value="60">60</option>
+        </select>
+        <div class="status-box" id="autoStatus"></div>
+        <div class="row"><button id="saveAuto" class="btn primary">💾 บันทึก &amp; ตั้งเวลา</button><button id="runNow" class="btn ghost">▶️ รันเดี๋ยวนี้</button></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="toast" class="toast"></div>
+<div id="loading" class="loading" style="display:none"><div class="spinner"></div><span id="loadingText">กำลังทำงาน…</span></div>
+
+<script>
+/* ===================== state & storage ===================== */
+var API_URL = localStorage.getItem('ocr_api_url') || '';
+var TOKEN   = localStorage.getItem('ocr_api_token') || '';
+var ID_TOKEN = '';            // Google ID token (ถ้ามีการล็อกอิน Gmail)
+var CLIENT_ID = '';
+var pendingFiles = [];
+
+function $(id){return document.getElementById(id);}
+function show(el,on){el.style.display=on?'':'none';}
+function money(n){n=Number(n)||0;return n.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function esc(s){return(s==null?'':String(s)).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function loading(on,t){$('loadingText').textContent=t||'กำลังทำงาน…';show($('loading'),on);}
+function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2600);}
+
+/* ===================== API caller =====================
+   ใช้ Content-Type: text/plain เพื่อเลี่ยง CORS preflight (Apps Script ตอบ OPTIONS ไม่ได้) */
+function api(action, extra){
+  var body = Object.assign({action:action, apiToken:TOKEN, idToken:ID_TOKEN}, extra||{});
+  return fetch(API_URL, {
+    method:'POST', redirect:'follow',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify(body)
+  }).then(function(r){return r.json();}).then(function(d){
+    if(!d.ok) throw new Error(d.error||('เกิดข้อผิดพลาด'+(d.code?(' ('+d.code+')'):'')));
+    return d;
+  });
+}
+
+/* ===================== connect flow ===================== */
+if(API_URL) $('in_url').value = API_URL;
+if(TOKEN) $('in_token').value = TOKEN;
+
+$('connectBtn').addEventListener('click', function(){
+  API_URL = $('in_url').value.trim(); TOKEN = $('in_token').value.trim();
+  if(!API_URL || !TOKEN){ setConn('กรอก URL และ Token ให้ครบ', false); return; }
+  loading(true,'กำลังเชื่อมต่อ…');
+  api('bootstrap').then(function(d){
+    loading(false);
+    localStorage.setItem('ocr_api_url',API_URL); localStorage.setItem('ocr_api_token',TOKEN);
+    enterApp(d.data);
+  }).catch(function(e){ loading(false); setConn('เชื่อมต่อไม่ได้: '+e.message, false); });
+});
+function setConn(msg,ok){ var el=$('connMsg'); el.textContent=(ok?'✔ ':'✖ ')+msg; el.className='test-result '+(ok?'ok':'err'); }
+
+$('disconnect').addEventListener('click', function(){
+  localStorage.removeItem('ocr_api_token'); TOKEN=''; ID_TOKEN='';
+  location.reload();
+});
+
+/* ===================== auto-connect ถ้ามีค่าเดิม ===================== */
+if(API_URL && TOKEN){
+  loading(true,'กำลังเชื่อมต่อ…');
+  api('bootstrap').then(function(d){ loading(false); enterApp(d.data); })
+    .catch(function(){ loading(false); /* ให้ผู้ใช้กรอกใหม่ */ });
+}
+
+/* ===================== enter app ===================== */
+function enterApp(b){
+  show($('connectView'),false); show($('appView'),true);
+  show($('disconnect'),true);
+  var cfg=b.config||{};
+  CLIENT_ID = b.googleClientId||'';
+  // models
+  (b.models||[]).forEach(function(m){var o=document.createElement('option');o.value=m;$('modelList').appendChild(o);});
+  // fill settings
+  $('cfg_GEMINI_MODEL').value=cfg.GEMINI_MODEL||'';
+  $('cfg_DRIVE_SOURCE_FOLDER_ID').value=cfg.DRIVE_SOURCE_FOLDER_ID||'';
+  $('cfg_DRIVE_DONE_FOLDER_ID').value=cfg.DRIVE_DONE_FOLDER_ID||'';
+  $('cfg_GMAIL_QUERY').value=cfg.GMAIL_QUERY||'';
+  $('cfg_GMAIL_PROCESSED_LABEL').value=cfg.GMAIL_PROCESSED_LABEL||'';
+  $('cfg_SPREADSHEET_ID').value=cfg.SPREADSHEET_ID||'';
+  $('cfg_DEDUPE').checked=cfg.DEDUPE==='true';
+  $('cfg_AUTO_ENABLED').checked=cfg.AUTO_ENABLED==='true';
+  $('cfg_AUTO_INTERVAL_MIN').value=cfg.AUTO_INTERVAL_MIN||'30';
+  var ks=$('keyState');
+  if(cfg.GEMINI_API_KEY_SET){ks.textContent='ตั้งค่าแล้ว';ks.className='badge set';}else{ks.textContent='ยังไม่ได้ตั้งค่า';ks.className='badge unset';}
+  setSourceMode(cfg.SOURCE_MODE||'manual');
+  if(b.spreadsheetUrl){$('openSheet').href=b.spreadsheetUrl;show($('openSheet'),true);}
+  renderAutoStatus(b.auto);
+  setupSignIn(cfg);
+}
+
+/* ===================== Google Sign-In (ไม่บังคับ) ===================== */
+function setupSignIn(cfg){
+  var restricted = (cfg.ALLOWED_EMAILS||'').trim()!=='' || !!CLIENT_ID;
+  if(!CLIENT_ID){
+    if((cfg.ALLOWED_EMAILS||'').trim()!==''){
+      $('gsiNotice').style.display=''; $('gsiNotice').innerHTML='⚠ ระบบจำกัดอีเมล แต่ยังไม่ได้ตั้ง Google Client ID — โปรดตั้งค่าในแอป Apps Script เพื่อเปิดใช้ Login ด้วย Gmail';
+    }
+    return;
+  }
+  var s=document.createElement('script'); s.src='https://accounts.google.com/gsi/client'; s.async=true; s.defer=true;
+  s.onload=function(){
+    google.accounts.id.initialize({ client_id:CLIENT_ID, callback:onCredential });
+    google.accounts.id.renderButton($('gsiBtn'), {theme:'filled_blue',size:'medium',text:'signin_with',shape:'pill'});
+  };
+  document.head.appendChild(s);
+}
+function onCredential(resp){
+  ID_TOKEN = resp.credential;
+  var payload = JSON.parse(atob(ID_TOKEN.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+  $('userEmail').textContent='👤 '+payload.email; show($('userEmail'),true);
+  show($('gsiBtn'),false);
+  toast('เข้าสู่ระบบด้วย Gmail แล้ว');
+}
+
+/* ===================== tabs ===================== */
+document.querySelectorAll('.tab').forEach(function(tab){tab.addEventListener('click',function(){
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
+  tab.classList.add('active'); $('tab-'+tab.dataset.tab).classList.add('active');
+});});
+
+/* ===================== source mode ===================== */
+function setSourceMode(mode){
+  $('cfg_SOURCE_MODE').value=mode;
+  document.querySelectorAll('#sourceModeSeg button').forEach(function(b){b.classList.toggle('active',b.dataset.val===mode);});
+  document.querySelectorAll('.src-block').forEach(function(el){show(el,el.dataset.mode===mode);});
+}
+document.querySelectorAll('#sourceModeSeg button').forEach(function(b){b.addEventListener('click',function(){setSourceMode(b.dataset.val);});});
+
+/* ===================== upload ===================== */
+var drop=$('drop'),fileInput=$('fileInput');
+$('browseBtn').addEventListener('click',function(e){e.stopPropagation();fileInput.click();});
+drop.addEventListener('click',function(){fileInput.click();});
+['dragover','dragenter'].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add('drag');});});
+['dragleave','drop'].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove('drag');});});
+drop.addEventListener('drop',function(e){handleFiles(e.dataTransfer.files);});
+fileInput.addEventListener('change',function(){handleFiles(fileInput.files);});
+function handleFiles(list){
+  var arr=Array.prototype.slice.call(list); if(!arr.length)return; var left=arr.length;
+  arr.forEach(function(file){var rd=new FileReader();rd.onload=function(){
+    pendingFiles.push({name:file.name,mimeType:file.type||'application/octet-stream',dataB64:rd.result.split(',')[1]});
+    if(--left===0)updateCount();};rd.readAsDataURL(file);});
+}
+function updateCount(){$('fileCount').textContent=pendingFiles.length?('เลือกแล้ว '+pendingFiles.length+' ไฟล์'):'';$('runUpload').disabled=pendingFiles.length===0;}
+
+/* ===================== run ===================== */
+$('runUpload').addEventListener('click',function(){
+  if(!pendingFiles.length)return;
+  loading(true,'กำลังอ่าน '+pendingFiles.length+' ไฟล์ ด้วย Gemini…');
+  api('processImages',{files:pendingFiles}).then(function(d){loading(false);renderResults(d.data);pendingFiles=[];updateCount();})
+    .catch(function(e){loading(false);toast('ผิดพลาด: '+e.message);});
+});
+$('runSources').addEventListener('click',runSources); $('runNow').addEventListener('click',runSources);
+function runSources(){
+  loading(true,'กำลังดึงและอ่านเอกสารจากแหล่งข้อมูล…');
+  api('processSources').then(function(d){loading(false);renderResults(d.data);if(d.data.summary.total===0)toast('ไม่พบเอกสารใหม่');})
+    .catch(function(e){loading(false);toast('ผิดพลาด: '+e.message);});
+}
+
+/* ===================== results ===================== */
+function renderResults(res){
+  var s=res.summary||{};
+  $('summary').innerHTML=chip('ทั้งหมด',s.total,'')+chip('บันทึก',s.saved,'ok')+chip('ต้องตรวจ',s.needReview,'warn')+chip('ซ้ำ',s.duplicate,'')+chip('ผิดพลาด',s.failed,'err');
+  show($('summary'),true);
+  var html='';(res.results||[]).forEach(function(r,i){html+=renderDoc(r,i);});
+  $('results').innerHTML=html||'<p class="hint">— ไม่มีผลลัพธ์ —</p>';
+  document.querySelectorAll('.doc-head[data-i]').forEach(function(h){h.addEventListener('click',function(){$('body-'+h.dataset.i).classList.toggle('open');});});
+  api('sheetUrl').then(function(d){if(d.url){$('openSheet').href=d.url;show($('openSheet'),true);}}).catch(function(){});
+}
+function chip(l,n,c){return'<div class="chip '+c+'"><b>'+(n||0)+'</b>'+l+'</div>';}
+function kv(k,v){return'<div><span>'+esc(k)+':</span> '+esc(v)+'</div>';}
+function renderDoc(r,i){
+  if(!r.ok){return'<div class="doc"><div class="doc-head error"><div><div class="doc-title">✖ '+esc(r.fileName)+'</div><div class="doc-meta">'+esc(r.source)+'</div></div><span class="pill error">อ่านไม่สำเร็จ</span></div><div class="doc-body open"><div class="msgs">'+esc(r.error)+'</div></div></div>';}
+  var d=r.doc,v=r.validation,lvl=v.level;
+  var pill=r.duplicate?'<span class="pill dup">ซ้ำ</span>':'<span class="pill '+lvl+'">'+esc(v.status)+'</span>';
+  var items='';(d.line_items||[]).forEach(function(it,idx){items+='<tr><td>'+(idx+1)+'</td><td>'+esc(it.description)+'</td><td>'+money(it.quantity)+'</td><td>'+money(it.unit_price)+'</td><td>'+money(it.amount)+'</td></tr>';});
+  return'<div class="doc"><div class="doc-head '+lvl+'" data-i="'+i+'"><div><div class="doc-title">'+esc(d.doc_type)+' — '+esc(d.seller_name||'(ไม่ระบุผู้ขาย)')+'</div><div class="doc-meta">'+esc(d.doc_number||'ไม่มีเลขที่')+' · '+esc(d.doc_date||'ไม่มีวันที่')+' · '+esc(r.fileName)+'</div></div><div style="text-align:right"><div style="font-weight:700">฿'+money(d.grand_total)+'</div>'+pill+'</div></div><div class="doc-body" id="body-'+i+'"><div class="kv">'+kv('เลขภาษีผู้ขาย',d.seller_tax_id)+kv('ผู้ซื้อ',d.buyer_name)+kv('เลขภาษีผู้ซื้อ',d.buyer_tax_id)+kv('มูลค่าก่อนภาษี',money(d.sub_total))+kv('อัตราภาษี',d.vat_rate+'%')+kv('ภาษี',money(d.vat_amount))+kv('ยอดรวม',money(d.grand_total))+kv('บันทึกที่ชีต',r.sheet||'-')+'</div>'+(items?('<table class="items"><tr><th>#</th><th>รายการ</th><th>จำนวน</th><th>ราคา/หน่วย</th><th>จำนวนเงิน</th></tr>'+items+'</table>'):'')+'<div class="msgs">'+esc(v.summary)+'</div></div></div>';
+}
+
+/* ===================== settings save ===================== */
+$('saveSettings').addEventListener('click',function(){
+  var patch={GEMINI_MODEL:$('cfg_GEMINI_MODEL').value.trim(),SOURCE_MODE:$('cfg_SOURCE_MODE').value,
+    DRIVE_SOURCE_FOLDER_ID:$('cfg_DRIVE_SOURCE_FOLDER_ID').value.trim(),DRIVE_DONE_FOLDER_ID:$('cfg_DRIVE_DONE_FOLDER_ID').value.trim(),
+    GMAIL_QUERY:$('cfg_GMAIL_QUERY').value.trim(),GMAIL_PROCESSED_LABEL:$('cfg_GMAIL_PROCESSED_LABEL').value.trim(),
+    SPREADSHEET_ID:$('cfg_SPREADSHEET_ID').value.trim(),DEDUPE:$('cfg_DEDUPE').checked?'true':'false'};
+  var key=$('cfg_GEMINI_API_KEY').value; if(key)patch.GEMINI_API_KEY=key;
+  loading(true,'กำลังบันทึก…');
+  api('saveConfig',{patch:patch}).then(function(d){
+    loading(false);$('cfg_GEMINI_API_KEY').value='';
+    if(d.data&&d.data.GEMINI_API_KEY_SET){var ks=$('keyState');ks.textContent='ตั้งค่าแล้ว';ks.className='badge set';}
+    var r=$('saveResult');r.textContent='✔ บันทึกแล้ว';r.className='test-result ok';toast('บันทึกการตั้งค่าแล้ว');
+  }).catch(gate);
+});
+
+/* ===================== test source ===================== */
+$('testSource').addEventListener('click',function(){
+  var patch={SOURCE_MODE:$('cfg_SOURCE_MODE').value,DRIVE_SOURCE_FOLDER_ID:$('cfg_DRIVE_SOURCE_FOLDER_ID').value.trim(),GMAIL_QUERY:$('cfg_GMAIL_QUERY').value.trim()};
+  loading(true,'กำลังทดสอบ…');
+  api('saveConfig',{patch:patch}).then(function(){return api('testSource');}).then(function(d){
+    loading(false);var r=$('testResult');r.textContent=(d.data.ok?'✔ ':'✖ ')+d.data.message;r.className='test-result '+(d.data.ok?'ok':'err');
+  }).catch(gate);
+});
+
+/* ===================== auto save ===================== */
+$('saveAuto').addEventListener('click',function(){
+  var patch={AUTO_ENABLED:$('cfg_AUTO_ENABLED').checked?'true':'false',AUTO_INTERVAL_MIN:$('cfg_AUTO_INTERVAL_MIN').value};
+  loading(true,'กำลังตั้งเวลา…');
+  api('saveConfig',{patch:patch}).then(function(){return api('autoStatus');}).then(function(d){
+    loading(false);renderAutoStatus(d.data);toast('อัปเดตการทำงานอัตโนมัติแล้ว');
+  }).catch(gate);
+});
+function renderAutoStatus(st){
+  if(!st)return;var modeText={manual:'อัปโหลดเอง',drive:'Google Drive',gmail:'Gmail'}[st.sourceMode]||st.sourceMode;
+  var lines=['สถานะ: '+(st.enabled?'🟢 เปิด':'⚪ ปิด'),'Trigger ทำงานจริง: '+(st.triggerActive?'✔ ใช่':'✖ ไม่'),'รอบเวลา: ทุก '+st.intervalMin+' นาที','แหล่งข้อมูล: '+modeText];
+  if(st.enabled&&st.sourceMode==='manual')lines.push('⚠ โหมด "อัปโหลดเอง" ไม่มีไฟล์ให้ดึงอัตโนมัติ — เลือก Drive หรือ Gmail');
+  $('autoStatus').innerHTML=lines.map(function(l){return'<div>'+esc(l)+'</div>';}).join('');
+}
+
+/* ===================== error gate (ต้อง Login Gmail) ===================== */
+function gate(e){
+  loading(false);
+  if(/Gmail|อนุญาต|401|403/.test(e.message) && CLIENT_ID && !ID_TOKEN){
+    toast('การกระทำนี้ต้อง Login ด้วย Gmail ก่อน (ปุ่มมุมขวาบน)');
+  } else { toast('ผิดพลาด: '+e.message); }
+}
+</script>
+</body>
+</html>

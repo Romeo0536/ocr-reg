@@ -36,7 +36,12 @@ var DEFAULT_CONFIG = {
 
   // --- อื่น ๆ ---
   DEDUPE: 'true',                 // ข้ามเอกสารซ้ำ (อ้างอิงจากเลขที่เอกสาร + ผู้ขาย)
-  DEFAULT_VAT_RATE: '7'           // อัตราภาษีมูลค่าเพิ่มเริ่มต้น (%) ใช้ตอนตรวจสอบ
+  DEFAULT_VAT_RATE: '7',          // อัตราภาษีมูลค่าเพิ่มเริ่มต้น (%) ใช้ตอนตรวจสอบ
+
+  // --- API สำหรับหน้าเว็บภายนอก (external frontend) ---
+  API_TOKEN: '',                  // โทเคนลับสำหรับเรียก API (สร้างในหน้าตั้งค่า)
+  ALLOWED_EMAILS: '',             // จำกัดอีเมลที่ใช้ได้ คั่นด้วย , (เว้นว่าง = ใช้ token อย่างเดียว)
+  GOOGLE_CLIENT_ID: ''            // OAuth Client ID สำหรับ "Login ด้วย Gmail" บน frontend (ไม่บังคับ)
 };
 
 /** อ่านค่าตั้งค่าทั้งหมด (รวมค่า default) */
@@ -54,6 +59,8 @@ function getConfigSafe() {
   var cfg = getConfig();
   cfg.GEMINI_API_KEY_SET = !!cfg.GEMINI_API_KEY;   // บอกแค่ว่าตั้งค่าแล้วหรือยัง
   cfg.GEMINI_API_KEY = '';                          // ไม่ส่ง key จริงกลับไป
+  cfg.API_TOKEN_SET = !!cfg.API_TOKEN;
+  cfg.API_TOKEN = '';                               // ไม่ส่ง token จริงกลับไป (มี getApiInfo แยก)
   cfg.USER_EMAIL = getActiveEmail_();
   return cfg;
 }
