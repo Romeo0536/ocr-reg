@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <?!= include('Stylesheet'); ?>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">🧾</span>
+      <div>
+        <h1>ระบบอ่านบิล &amp; ภาษี</h1>
+        <p class="sub">อ่านบิล / ใบเสร็จ / ภาษีซื้อ / ภาษีขาย ด้วย Gemini → บันทึกลง Google Sheet</p>
+      </div>
+    </div>
+    <div class="user">
+      <span id="userEmail" class="email">กำลังตรวจสอบผู้ใช้…</span>
+      <a id="openSheet" class="btn ghost" target="_blank" style="display:none">📗 เปิดชีต</a>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="process">📥 ประมวลผล</button>
+    <button class="tab" data-tab="settings">⚙️ ตั้งค่า</button>
+    <button class="tab" data-tab="auto">🤖 อัตโนมัติ</button>
+  </nav>
+
+  <!-- ================= ประมวลผล ================= -->
+  <section id="tab-process" class="panel active">
+    <div class="card">
+      <h2>อัปโหลดเอกสาร</h2>
+      <p class="hint">รองรับ รูปภาพ (JPG/PNG/WEBP) และ PDF — เลือกได้หลายไฟล์พร้อมกัน</p>
+      <div id="drop" class="dropzone">
+        <input type="file" id="fileInput" multiple accept="image/*,application/pdf" hidden>
+        <div class="dz-inner">
+          <span class="dz-icon">⬆️</span>
+          <p>ลากไฟล์มาวาง หรือ <button class="linklike" id="browseBtn">เลือกไฟล์</button></p>
+          <p id="fileCount" class="hint"></p>
+        </div>
+      </div>
+      <div class="row">
+        <button id="runUpload" class="btn primary" disabled>อ่านและบันทึก</button>
+        <button id="runSources" class="btn">ดึงจากแหล่งอัตโนมัติเดี๋ยวนี้</button>
+      </div>
+    </div>
+
+    <div id="summary" class="summary" style="display:none"></div>
+    <div id="results"></div>
+  </section>
+
+  <!-- ================= ตั้งค่า ================= -->
+  <section id="tab-settings" class="panel">
+    <div class="card">
+      <h2>Gemini</h2>
+      <label>API Key <span id="keyState" class="badge"></span></label>
+      <input type="password" id="cfg_GEMINI_API_KEY" placeholder="วาง Gemini API Key (เว้นว่าง = คงค่าเดิม)">
+      <label>รุ่นโมเดล</label>
+      <input list="modelList" id="cfg_GEMINI_MODEL" placeholder="gemini-2.0-flash">
+      <datalist id="modelList"></datalist>
+      <p class="hint">เปลี่ยนเป็นรุ่นที่บัญชีคุณเข้าถึงได้ เช่น gemini-3.1-flash / gemini-2.0-flash</p>
+    </div>
+
+    <div class="card">
+      <h2>แหล่งข้อมูล (ดึงจากไหน)</h2>
+      <div class="segmented" id="sourceModeSeg">
+        <button data-val="manual">อัปโหลดเอง</button>
+        <button data-val="drive">Google Drive</button>
+        <button data-val="gmail">Gmail</button>
+      </div>
+      <input type="hidden" id="cfg_SOURCE_MODE">
+
+      <div class="src-block" data-mode="drive" style="display:none">
+        <label>โฟลเดอร์ต้นทาง (Folder ID)</label>
+        <input id="cfg_DRIVE_SOURCE_FOLDER_ID" placeholder="เช่น 1AbCdEf...">
+        <label>โฟลเดอร์เก็บไฟล์ที่ทำเสร็จ (ไม่บังคับ)</label>
+        <input id="cfg_DRIVE_DONE_FOLDER_ID" placeholder="เว้นว่าง = ไม่ย้ายไฟล์">
+      </div>
+
+      <div class="src-block" data-mode="gmail" style="display:none">
+        <label>เงื่อนไขค้นหาอีเมล (Gmail search)</label>
+        <input id="cfg_GMAIL_QUERY" placeholder="has:attachment invoice OR ใบเสร็จ">
+        <label>ป้ายกำกับเมื่อประมวลผลแล้ว</label>
+        <input id="cfg_GMAIL_PROCESSED_LABEL" placeholder="OCR-Processed">
+      </div>
+
+      <button id="testSource" class="btn ghost">🔌 ทดสอบการเชื่อมต่อ</button>
+      <span id="testResult" class="test-result"></span>
+    </div>
+
+    <div class="card">
+      <h2>ปลายทาง (เก็บที่ไหน)</h2>
+      <label>Google Sheet ID</label>
+      <input id="cfg_SPREADSHEET_ID" placeholder="เว้นว่าง = สร้างชีตใหม่ให้อัตโนมัติ">
+      <label class="switch-row">
+        <input type="checkbox" id="cfg_DEDUPE"> ข้ามเอกสารซ้ำ (Dedupe)
+      </label>
+      <a id="openSheet2" class="btn ghost" target="_blank" style="display:none">📗 เปิดชีตปลายทาง</a>
+    </div>
+
+    <div class="row">
+      <button id="saveSettings" class="btn primary">💾 บันทึกการตั้งค่า</button>
+      <span id="saveResult" class="test-result"></span>
+    </div>
+  </section>
+
+  <!-- ================= อัตโนมัติ ================= -->
+  <section id="tab-auto" class="panel">
+    <div class="card">
+      <h2>ทำงานอัตโนมัติ</h2>
+      <p class="hint">เมื่อเปิด ระบบจะดึงเอกสารจากแหล่งที่เลือก (Drive/Gmail) มาอ่านและบันทึกเองตามรอบเวลา</p>
+      <label class="switch-row big">
+        <input type="checkbox" id="cfg_AUTO_ENABLED"> เปิดการทำงานอัตโนมัติ
+      </label>
+      <label>ทำงานทุกๆ (นาที)</label>
+      <select id="cfg_AUTO_INTERVAL_MIN">
+        <option value="1">1 นาที</option>
+        <option value="5">5 นาที</option>
+        <option value="10">10 นาที</option>
+        <option value="15">15 นาที</option>
+        <option value="30" selected>30 นาที</option>
+        <option value="60">60 นาที</option>
+      </select>
+      <div class="status-box" id="autoStatus"></div>
+      <button id="saveAuto" class="btn primary">💾 บันทึก &amp; ตั้งเวลา</button>
+      <button id="runNow" class="btn ghost">▶️ รันเดี๋ยวนี้</button>
+    </div>
+  </section>
+
+  <div id="toast" class="toast"></div>
+  <div id="loading" class="loading" style="display:none"><div class="spinner"></div><span id="loadingText">กำลังทำงาน…</span></div>
+
+  <?!= include('JavaScript'); ?>
+</body>
+</html>

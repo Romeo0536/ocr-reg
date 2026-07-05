@@ -1,0 +1,237 @@
+<script>
+/* ===================== state ===================== */
+var pendingFiles = [];   // [{name,mimeType,dataB64}]
+var CFG = {};
+
+/* ===================== helpers ===================== */
+function $(id){ return document.getElementById(id); }
+function show(el,on){ el.style.display = on ? '' : 'none'; }
+function money(n){ n = Number(n)||0; return n.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function loading(on,text){ $('loadingText').textContent=text||'กำลังทำงาน…'; show($('loading'),on); }
+function toast(msg){ var t=$('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(function(){t.classList.remove('show');},2600); }
+
+/* ===================== tabs ===================== */
+document.querySelectorAll('.tab').forEach(function(tab){
+  tab.addEventListener('click',function(){
+    document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+    document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
+    tab.classList.add('active');
+    $('tab-'+tab.dataset.tab).classList.add('active');
+  });
+});
+
+/* ===================== bootstrap ===================== */
+google.script.run.withSuccessHandler(onBootstrap).withFailureHandler(onFail).getBootstrap();
+
+function onBootstrap(b){
+  CFG = b.config || {};
+  // user
+  $('userEmail').textContent = CFG.USER_EMAIL ? ('👤 '+CFG.USER_EMAIL) : 'ยังไม่ได้ล็อกอิน';
+  // sheet links
+  if(b.spreadsheetUrl){
+    $('openSheet').href=b.spreadsheetUrl; show($('openSheet'),true);
+    $('openSheet2').href=b.spreadsheetUrl; show($('openSheet2'),true);
+  }
+  // models datalist
+  (b.models||[]).forEach(function(m){ var o=document.createElement('option'); o.value=m; $('modelList').appendChild(o); });
+  // fill settings
+  $('cfg_GEMINI_MODEL').value = CFG.GEMINI_MODEL||'';
+  $('cfg_DRIVE_SOURCE_FOLDER_ID').value = CFG.DRIVE_SOURCE_FOLDER_ID||'';
+  $('cfg_DRIVE_DONE_FOLDER_ID').value = CFG.DRIVE_DONE_FOLDER_ID||'';
+  $('cfg_GMAIL_QUERY').value = CFG.GMAIL_QUERY||'';
+  $('cfg_GMAIL_PROCESSED_LABEL').value = CFG.GMAIL_PROCESSED_LABEL||'';
+  $('cfg_SPREADSHEET_ID').value = CFG.SPREADSHEET_ID||'';
+  $('cfg_DEDUPE').checked = CFG.DEDUPE==='true';
+  $('cfg_AUTO_ENABLED').checked = CFG.AUTO_ENABLED==='true';
+  $('cfg_AUTO_INTERVAL_MIN').value = CFG.AUTO_INTERVAL_MIN||'30';
+  // key state
+  var ks=$('keyState');
+  if(CFG.GEMINI_API_KEY_SET){ ks.textContent='ตั้งค่าแล้ว'; ks.className='badge set'; }
+  else { ks.textContent='ยังไม่ได้ตั้งค่า'; ks.className='badge unset'; }
+  // source mode
+  setSourceMode(CFG.SOURCE_MODE||'manual');
+  renderAutoStatus(b.auto);
+}
+function onFail(err){ loading(false); toast('ผิดพลาด: '+(err && err.message ? err.message : err)); }
+
+/* ===================== source mode segmented ===================== */
+function setSourceMode(mode){
+  $('cfg_SOURCE_MODE').value = mode;
+  document.querySelectorAll('#sourceModeSeg button').forEach(function(b){ b.classList.toggle('active', b.dataset.val===mode); });
+  document.querySelectorAll('.src-block').forEach(function(el){ show(el, el.dataset.mode===mode); });
+}
+document.querySelectorAll('#sourceModeSeg button').forEach(function(b){
+  b.addEventListener('click',function(){ setSourceMode(b.dataset.val); });
+});
+
+/* ===================== file upload ===================== */
+var drop=$('drop'), fileInput=$('fileInput');
+$('browseBtn').addEventListener('click',function(e){ e.stopPropagation(); fileInput.click(); });
+drop.addEventListener('click',function(){ fileInput.click(); });
+['dragover','dragenter'].forEach(function(ev){ drop.addEventListener(ev,function(e){ e.preventDefault(); drop.classList.add('drag'); }); });
+['dragleave','drop'].forEach(function(ev){ drop.addEventListener(ev,function(e){ e.preventDefault(); drop.classList.remove('drag'); }); });
+drop.addEventListener('drop',function(e){ handleFiles(e.dataTransfer.files); });
+fileInput.addEventListener('change',function(){ handleFiles(fileInput.files); });
+
+function handleFiles(fileList){
+  var arr=Array.prototype.slice.call(fileList);
+  if(!arr.length) return;
+  var remaining=arr.length;
+  arr.forEach(function(file){
+    var reader=new FileReader();
+    reader.onload=function(){
+      var b64=reader.result.split(',')[1];
+      pendingFiles.push({ name:file.name, mimeType:file.type||'application/octet-stream', dataB64:b64 });
+      if(--remaining===0) updateFileCount();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function updateFileCount(){
+  $('fileCount').textContent = pendingFiles.length ? ('เลือกแล้ว '+pendingFiles.length+' ไฟล์') : '';
+  $('runUpload').disabled = pendingFiles.length===0;
+}
+
+/* ===================== run: upload ===================== */
+$('runUpload').addEventListener('click',function(){
+  if(!pendingFiles.length) return;
+  loading(true,'กำลังอ่านเอกสาร '+pendingFiles.length+' ไฟล์ ด้วย Gemini…');
+  google.script.run
+    .withSuccessHandler(function(res){ loading(false); renderResults(res); pendingFiles=[]; updateFileCount(); })
+    .withFailureHandler(onFail)
+    .processUploadedFiles(pendingFiles);
+});
+
+/* ===================== run: sources ===================== */
+$('runSources').addEventListener('click',runSources);
+$('runNow').addEventListener('click',runSources);
+function runSources(){
+  loading(true,'กำลังดึงและอ่านเอกสารจากแหล่งข้อมูล…');
+  google.script.run
+    .withSuccessHandler(function(res){ loading(false); renderResults(res); if(res.summary.total===0) toast('ไม่พบเอกสารใหม่จากแหล่งที่เลือก'); })
+    .withFailureHandler(onFail)
+    .processAllSources();
+}
+
+/* ===================== render results ===================== */
+function renderResults(res){
+  var s=res.summary||{}; var sm=$('summary');
+  sm.innerHTML =
+    chip('ทั้งหมด',s.total,'') + chip('บันทึก',s.saved,'ok') +
+    chip('ต้องตรวจ',s.needReview,'warn') + chip('ซ้ำ',s.duplicate,'') +
+    chip('ผิดพลาด',s.failed,'err');
+  show(sm,true);
+
+  var html='';
+  (res.results||[]).forEach(function(r,i){ html+=renderDoc(r,i); });
+  $('results').innerHTML = html || '<p class="hint">— ไม่มีผลลัพธ์ —</p>';
+  bindDocToggles();
+
+  // refresh sheet link (อาจเพิ่งสร้างชีตใหม่)
+  google.script.run.withSuccessHandler(function(url){
+    if(url){ $('openSheet').href=url; show($('openSheet'),true); $('openSheet2').href=url; show($('openSheet2'),true); }
+  }).getSpreadsheetUrl();
+}
+function chip(label,n,cls){ return '<div class="chip '+cls+'"><b>'+(n||0)+'</b>'+label+'</div>'; }
+
+function renderDoc(r,i){
+  if(!r.ok){
+    return '<div class="doc"><div class="doc-head error"><div><div class="doc-title">✖ '+esc(r.fileName)+'</div>'+
+      '<div class="doc-meta">'+esc(r.source)+'</div></div><span class="pill error">อ่านไม่สำเร็จ</span></div>'+
+      '<div class="doc-body open"><div class="msgs">'+esc(r.error)+'</div></div></div>';
+  }
+  var d=r.doc, v=r.validation, lvl=v.level;
+  var pill = r.duplicate ? '<span class="pill dup">ซ้ำ (ไม่บันทึกซ้ำ)</span>' : '<span class="pill '+lvl+'">'+esc(v.status)+'</span>';
+  var items='';
+  (d.line_items||[]).forEach(function(it,idx){
+    items+='<tr><td>'+(idx+1)+'</td><td>'+esc(it.description)+'</td><td>'+money(it.quantity)+'</td><td>'+money(it.unit_price)+'</td><td>'+money(it.amount)+'</td></tr>';
+  });
+  return ''+
+  '<div class="doc"><div class="doc-head '+lvl+'" data-i="'+i+'">'+
+    '<div><div class="doc-title">'+esc(d.doc_type)+' — '+esc(d.seller_name||'(ไม่ระบุผู้ขาย)')+'</div>'+
+    '<div class="doc-meta">'+esc(d.doc_number||'ไม่มีเลขที่')+' · '+esc(d.doc_date||'ไม่มีวันที่')+' · '+esc(r.fileName)+'</div></div>'+
+    '<div style="text-align:right"><div style="font-weight:700">฿'+money(d.grand_total)+'</div>'+pill+'</div>'+
+  '</div>'+
+  '<div class="doc-body" id="body-'+i+'">'+
+    '<div class="kv">'+
+      kv('เลขภาษีผู้ขาย',d.seller_tax_id)+kv('ผู้ซื้อ',d.buyer_name)+kv('เลขภาษีผู้ซื้อ',d.buyer_tax_id)+
+      kv('มูลค่าก่อนภาษี',money(d.sub_total))+kv('อัตราภาษี',d.vat_rate+'%')+kv('ภาษีมูลค่าเพิ่ม',money(d.vat_amount))+
+      kv('ยอดรวมสุทธิ',money(d.grand_total))+kv('บันทึกที่ชีต',r.sheet||'-')+
+    '</div>'+
+    (items?('<table class="items"><tr><th>#</th><th>รายการ</th><th>จำนวน</th><th>ราคา/หน่วย</th><th>จำนวนเงิน</th></tr>'+items+'</table>'):'')+
+    '<div class="msgs">'+esc(v.summary)+'</div>'+
+  '</div></div>';
+}
+function kv(k,val){ return '<div><span>'+esc(k)+':</span> '+esc(val)+'</div>'; }
+function bindDocToggles(){
+  document.querySelectorAll('.doc-head[data-i]').forEach(function(h){
+    h.addEventListener('click',function(){ $('body-'+h.dataset.i).classList.toggle('open'); });
+  });
+}
+
+/* ===================== settings save ===================== */
+$('saveSettings').addEventListener('click',function(){
+  var patch={
+    GEMINI_MODEL:$('cfg_GEMINI_MODEL').value.trim(),
+    SOURCE_MODE:$('cfg_SOURCE_MODE').value,
+    DRIVE_SOURCE_FOLDER_ID:$('cfg_DRIVE_SOURCE_FOLDER_ID').value.trim(),
+    DRIVE_DONE_FOLDER_ID:$('cfg_DRIVE_DONE_FOLDER_ID').value.trim(),
+    GMAIL_QUERY:$('cfg_GMAIL_QUERY').value.trim(),
+    GMAIL_PROCESSED_LABEL:$('cfg_GMAIL_PROCESSED_LABEL').value.trim(),
+    SPREADSHEET_ID:$('cfg_SPREADSHEET_ID').value.trim(),
+    DEDUPE:$('cfg_DEDUPE').checked?'true':'false'
+  };
+  var key=$('cfg_GEMINI_API_KEY').value;
+  if(key) patch.GEMINI_API_KEY=key;
+  loading(true,'กำลังบันทึกการตั้งค่า…');
+  google.script.run.withSuccessHandler(function(safe){
+    loading(false); CFG=safe; $('cfg_GEMINI_API_KEY').value='';
+    var ks=$('keyState');
+    if(safe.GEMINI_API_KEY_SET){ ks.textContent='ตั้งค่าแล้ว'; ks.className='badge set'; }
+    var r=$('saveResult'); r.textContent='✔ บันทึกแล้ว'; r.className='test-result ok';
+    toast('บันทึกการตั้งค่าเรียบร้อย');
+  }).withFailureHandler(onFail).saveConfig(patch);
+});
+
+/* ===================== test source ===================== */
+$('testSource').addEventListener('click',function(){
+  // บันทึกค่าแหล่งข้อมูลก่อนทดสอบ
+  var patch={
+    SOURCE_MODE:$('cfg_SOURCE_MODE').value,
+    DRIVE_SOURCE_FOLDER_ID:$('cfg_DRIVE_SOURCE_FOLDER_ID').value.trim(),
+    GMAIL_QUERY:$('cfg_GMAIL_QUERY').value.trim()
+  };
+  loading(true,'กำลังทดสอบการเชื่อมต่อ…');
+  google.script.run.withSuccessHandler(function(){
+    google.script.run.withSuccessHandler(function(res){
+      loading(false);
+      var r=$('testResult'); r.textContent=(res.ok?'✔ ':'✖ ')+res.message; r.className='test-result '+(res.ok?'ok':'err');
+    }).withFailureHandler(onFail).testSource();
+  }).withFailureHandler(onFail).saveConfig(patch);
+});
+
+/* ===================== auto save ===================== */
+$('saveAuto').addEventListener('click',function(){
+  var patch={ AUTO_ENABLED:$('cfg_AUTO_ENABLED').checked?'true':'false', AUTO_INTERVAL_MIN:$('cfg_AUTO_INTERVAL_MIN').value };
+  loading(true,'กำลังตั้งเวลาทำงานอัตโนมัติ…');
+  google.script.run.withSuccessHandler(function(){
+    google.script.run.withSuccessHandler(function(st){ loading(false); renderAutoStatus(st); toast('อัปเดตการทำงานอัตโนมัติแล้ว'); })
+      .withFailureHandler(onFail).getAutoStatus();
+  }).withFailureHandler(onFail).saveConfig(patch);
+});
+
+function renderAutoStatus(st){
+  if(!st) return;
+  var modeText={manual:'อัปโหลดเอง',drive:'Google Drive',gmail:'Gmail'}[st.sourceMode]||st.sourceMode;
+  var lines=[];
+  lines.push('สถานะ: '+(st.enabled?'🟢 เปิด':'⚪ ปิด'));
+  lines.push('Trigger ทำงานจริง: '+(st.triggerActive?'✔ ใช่':'✖ ไม่'));
+  lines.push('รอบเวลา: ทุก '+st.intervalMin+' นาที');
+  lines.push('แหล่งข้อมูล: '+modeText);
+  if(st.enabled && st.sourceMode==='manual'){
+    lines.push('⚠ โหมด "อัปโหลดเอง" ไม่มีไฟล์ให้ดึงอัตโนมัติ — เลือก Drive หรือ Gmail ในหน้าตั้งค่า');
+  }
+  $('autoStatus').innerHTML = lines.map(function(l){return '<div>'+esc(l)+'</div>';}).join('');
+}
+</script>

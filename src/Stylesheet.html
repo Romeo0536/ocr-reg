@@ -1,0 +1,105 @@
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#ffffff; --ink:#1f2937; --muted:#6b7280;
+    --primary:#0b5394; --primary-2:#1565c0; --line:#e5e7eb;
+    --ok:#137333; --warn:#b06000; --err:#b71c1c;
+    --ok-bg:#e6f4ea; --warn-bg:#fff4e0; --err-bg:#fdecea;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Sarabun","Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+  h1{font-size:19px;margin:0}
+  h2{font-size:16px;margin:0 0 10px}
+  p{margin:4px 0}
+  .sub{font-size:12px;color:var(--muted)}
+  .hint{font-size:12px;color:var(--muted)}
+
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;
+    background:linear-gradient(120deg,var(--primary),var(--primary-2));color:#fff;padding:14px 20px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{font-size:30px}
+  .topbar .sub{color:#dbe7f5}
+  .user{display:flex;align-items:center;gap:10px;text-align:right}
+  .email{font-size:13px;background:rgba(255,255,255,.15);padding:5px 10px;border-radius:20px}
+
+  .tabs{display:flex;gap:6px;padding:12px 20px 0;background:var(--bg);position:sticky;top:0;z-index:5}
+  .tab{border:none;background:#e6ebf5;color:var(--ink);padding:9px 16px;border-radius:10px 10px 0 0;cursor:pointer;font-size:14px}
+  .tab.active{background:var(--card);font-weight:600;box-shadow:0 -2px 6px rgba(0,0,0,.05)}
+
+  .panel{display:none;padding:16px 20px 60px;max-width:920px;margin:0 auto}
+  .panel.active{display:block}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  label{display:block;font-size:13px;font-weight:600;margin:12px 0 5px}
+  input[type=text],input[type=password],input:not([type]),select{
+    width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:14px;font-family:inherit;background:#fff}
+  input:focus,select:focus{outline:2px solid var(--primary-2);border-color:transparent}
+
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .btn{border:none;background:#e6ebf5;color:var(--ink);padding:10px 18px;border-radius:10px;cursor:pointer;font-size:14px;font-family:inherit}
+  .btn:hover{filter:brightness(.97)}
+  .btn.primary{background:var(--primary);color:#fff}
+  .btn.ghost{background:#fff;border:1px solid var(--line)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .linklike{border:none;background:none;color:var(--primary-2);cursor:pointer;font-size:inherit;text-decoration:underline;padding:0}
+
+  .dropzone{border:2px dashed #b9c6dd;border-radius:14px;padding:26px;text-align:center;background:#fbfdff;cursor:pointer;transition:.15s}
+  .dropzone.drag{background:#eef4ff;border-color:var(--primary-2)}
+  .dz-icon{font-size:34px}
+
+  .segmented{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .segmented button{border:none;background:#fff;padding:9px 16px;cursor:pointer;font-size:14px;font-family:inherit}
+  .segmented button.active{background:var(--primary);color:#fff}
+
+  .switch-row{display:flex;align-items:center;gap:8px;font-weight:600}
+  .switch-row.big{font-size:15px}
+  .switch-row input{width:auto}
+
+  .badge{font-size:11px;padding:2px 8px;border-radius:20px;background:#eee;color:#555;font-weight:500}
+  .badge.set{background:var(--ok-bg);color:var(--ok)}
+  .badge.unset{background:var(--err-bg);color:var(--err)}
+  .test-result{font-size:13px}
+  .test-result.ok{color:var(--ok)} .test-result.err{color:var(--err)}
+
+  .summary{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .chip{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:90px;text-align:center}
+  .chip b{display:block;font-size:20px}
+  .chip.ok b{color:var(--ok)} .chip.warn b{color:var(--warn)} .chip.err b{color:var(--err)}
+
+  .doc{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden}
+  .doc-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;cursor:pointer}
+  .doc-head.ok{border-left:5px solid var(--ok)}
+  .doc-head.warn{border-left:5px solid var(--warn);background:var(--warn-bg)}
+  .doc-head.error{border-left:5px solid var(--err);background:var(--err-bg)}
+  .doc-title{font-weight:600}
+  .doc-meta{font-size:12px;color:var(--muted)}
+  .pill{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600}
+  .pill.ok{background:var(--ok-bg);color:var(--ok)}
+  .pill.warn{background:var(--warn-bg);color:var(--warn)}
+  .pill.error{background:var(--err-bg);color:var(--err)}
+  .pill.dup{background:#eef;color:#446}
+  .doc-body{padding:0 16px 14px;display:none}
+  .doc-body.open{display:block}
+  .kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:6px 16px;font-size:13px;margin:8px 0}
+  .kv div span{color:var(--muted)}
+  table.items{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+  table.items th,table.items td{border:1px solid var(--line);padding:6px 8px;text-align:right}
+  table.items th:nth-child(2),table.items td:nth-child(2){text-align:left}
+  table.items th{background:#f0f4fb}
+  .msgs{font-size:12px;margin-top:8px;color:#555;line-height:1.6}
+
+  .status-box{background:#f7f9fc;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:13px;margin:12px 0;line-height:1.7}
+
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:#222;color:#fff;
+    padding:12px 20px;border-radius:10px;font-size:14px;opacity:0;transition:.25s;z-index:50}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+  .loading{position:fixed;inset:0;background:rgba(255,255,255,.7);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:14px;z-index:60}
+  .spinner{width:44px;height:44px;border:5px solid #d5deee;border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  @media(max-width:560px){
+    .topbar{flex-direction:column;align-items:flex-start}
+    .kv{grid-template-columns:1fr 1fr}
+  }
+</style>
